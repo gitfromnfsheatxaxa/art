@@ -10,6 +10,9 @@ type KenBurnsBackgroundProps = {
   alt?: string;
   active?: boolean;
   direction?: "in" | "out";
+  /** When true, portrait images use object-contain so the full artwork is visible.
+   *  Leave false (default) for full-bleed backgrounds that should always fill the screen. */
+  portraitContain?: boolean;
   priority?: boolean;
   objectPosition?: string;
   overlayClassName?: string;
@@ -22,6 +25,7 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
   alt = "",
   active = true,
   direction = "in",
+  portraitContain = false,
   priority,
   objectPosition = "50% 50%",
   overlayClassName,
@@ -32,13 +36,15 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
 
   const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.target as HTMLImageElement;
-    const portrait = img.naturalHeight > img.naturalWidth;
+    const portrait = img.naturalHeight > img.naturalWidth * 1.1;
     setIsPortrait(portrait);
     onPortraitDetected?.(portrait);
   };
 
+  const effectivePortrait = portraitContain && isPortrait;
+
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", isPortrait && "bg-codex-dark", className)}>
+    <div className={cn("absolute inset-0 overflow-hidden", effectivePortrait && "bg-codex-dark", className)}>
       <div
         className={cn(
           "absolute inset-[-10%]",
@@ -54,13 +60,13 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
           alt={alt}
           fill
           priority={priority}
-          className={isPortrait ? "object-contain" : "object-cover"}
+          className={effectivePortrait ? "object-contain" : "object-cover"}
           style={{ objectPosition }}
           sizes="100vw"
           onLoad={handleImageLoad}
         />
       </div>
-      {!isPortrait && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}
+      {!effectivePortrait && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}
     </div>
   );
 });

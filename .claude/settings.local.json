@@ -17,7 +17,12 @@
       "Bash(tasklist /FI \"PID eq 4044\" /FO LIST)",
       "PowerShell(Get-Process -Id 21992, 4044)",
       "PowerShell(Get-Process | Where-Object { $_.Id -eq 21992 -or $_.Id -eq 4044 } | Select-Object Id, ProcessName, @{N='Path';E={$_.Path}})",
-      "PowerShell(Get-NetTCPConnection -LocalPort 3000)"
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000)",
+      "PowerShell($p = Get-WmiObject Win32_Process | Where-Object { $_.ProcessId -eq 21992 -or $_.ProcessId -eq 4044 }; $p | Select-Object ProcessId, Name, CommandLine)",
+      "Bash(wmic process *)",
+      "Bash(taskkill /PID 4044 /F)",
+      "PowerShell(Stop-Process -Id 4044 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Id 21992 -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }

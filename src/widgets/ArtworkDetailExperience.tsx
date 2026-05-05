@@ -36,7 +36,7 @@ export function ArtworkDetailExperience({ artwork }: ArtworkDetailExperienceProp
       <Preloader imageSources={[artwork.img]} onReady={() => setReady(true)} />
       <FloatingNav items={[{ href: "/gallery", label: "Gallery" }, { href: "/timeline", label: "Timeline" }]} />
       <main className="relative z-10 h-screen overflow-hidden">
-        <KenBurnsBackground src={artwork.img} alt={artwork.title} priority onPortraitDetected={setIsPortrait} />
+        <KenBurnsBackground src={artwork.img} alt={artwork.title} priority portraitContain onPortraitDetected={setIsPortrait} />
         {!isPortrait && (
           <>
             <div className="absolute inset-0 z-[2] bg-[linear-gradient(90deg,transparent_35%,rgba(28,24,20,0.88)_76%)]" />

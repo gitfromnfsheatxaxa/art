@@ -146,7 +146,7 @@ export function TimelineExperience() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.45 }}
             >
-              <KenBurnsBackground src={hoveredBg} active objectPosition="50% 50%" />
+              <KenBurnsBackground src={hoveredBg} active portraitContain objectPosition="50% 50%" />
             </motion.div>
           )}
         </AnimatePresence>
