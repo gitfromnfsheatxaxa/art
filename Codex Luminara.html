@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Codex Luminara – Art Through the Ages</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-x: hidden; }
+  body { background: #1C1814; color: #F5E8C7; font-family: 'EB Garamond', serif; overflow-x: hidden; }
+
+  /* Parchment texture overlay */
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+
+  .section { position: relative; width: 100%; height: 100vh; scroll-snap-align: start; overflow: hidden; }
+  .section-content {
+    position: relative; z-index: 2;
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+
+  @keyframes kenBurnsIn {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.15); }
+  }
+  @keyframes kenBurnsOut {
+    0% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.8; text-shadow: 0 0 40px #E8C77F66, 0 0 80px #E8C77F22; }
+    50% { opacity: 1; text-shadow: 0 0 60px #E8C77Faa, 0 0 120px #E8C77F44; }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scrollHint {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 0.8; transform: translateY(8px); }
+  }
+
+  .gallery-track {
+    display: flex; gap: 24px; padding: 0 40px;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .gallery-track::-webkit-scrollbar { display: none; }
+  .gallery-track > * { scroll-snap-align: center; }
+
+  /* Scroll progress */
+  .scroll-progress {
+    position: fixed; top: 0; left: 0; height: 2px; z-index: 100;
+    background: linear-gradient(90deg, #D4AF77, #E8C77F);
+    transition: width 0.3s ease;
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px;
+    background: linear-gradient(180deg, #1C1814cc, transparent);
+    transition: opacity 0.5s ease;
+  }
+  .nav-logo { font-family: 'Cinzel', serif; font-size: 16px; color: #D4AF77; letter-spacing: 0.15em; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    font-family: 'Cinzel', serif; font-size: 12px; color: #F5E8C7aa;
+    text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: color 0.3s ease;
+  }
+  .nav-links a:hover { color: #D4AF77; }
+
+  @media (max-width: 768px) {
+    .nav { padding: 16px 20px; }
+    .nav-links { gap: 16px; }
+    .nav-links a { font-size: 10px; }
+    .section-content { padding: 24px; }
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="codex-components.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "goldColor": "#D4AF77",
+  "bgDark": "#1C1814",
+  "kenBurnsDuration": 28,
+  "transitionSpeed": 1.2,
+  "fontHeading": "Cinzel",
+  "fontBody": "EB Garamond",
+  "overlayOpacity": 0.65,
+  "bloomIntensity": 0.5
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [loading, setLoading] = React.useState(true);
+  const [progress, setProgress] = React.useState(0);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+  const [scrollPct, setScrollPct] = React.useState(0);
+  const [activeSection, setActiveSection] = React.useState(0);
+
+  const sections = isMobile ? MOBILE_SECTIONS : DESKTOP_SECTIONS;
+
+  // Responsive
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Preload images
+  React.useEffect(() => {
+    const allSrcs = [...DESKTOP_SECTIONS, ...MOBILE_SECTIONS, ...GALLERY_ARTWORKS].map(s => s.art);
+    const unique = [...new Set(allSrcs)];
+    let loaded = 0;
+    unique.forEach(src => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        setProgress(Math.round((loaded / unique.length) * 100));
+        if (loaded >= unique.length) {
+          setTimeout(() => setLoading(false), 800);
+        }
+      };
+      img.src = src;
+    });
+  }, []);
+
+  // Scroll tracking
+  React.useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollPct(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
+      const sectionIdx = Math.round(scrollTop / window.innerHeight);
+      setActiveSection(Math.min(sectionIdx, sections.length));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [sections.length]);
+
+  const goldColor = tweaks.goldColor;
+  const transSpeed = tweaks.transitionSpeed;
+
+  return (
+    <>
+      <LoadingScreen progress={progress} visible={loading} />
+
+      {!loading && (
+        <>
+          {/* Scroll progress */}
+          <div className="scroll-progress" style={{ width: `${scrollPct}%` }}></div>
+
+          {/* Nav */}
+          <nav className="nav">
+            <div className="nav-logo">Codex Luminara</div>
+            <ul className="nav-links">
+              <li><a href="#hero">Home</a></li>
+              <li><a href="Gallery.html">Gallery</a></li>
+              <li><a href="Timeline.html">Timeline</a></li>
+            </ul>
+          </nav>
+
+          {/* Hero Section */}
+          <div className="section" id="hero">
+            <KenBurnsBackground src={sections[0].art} active={true} index={0} />
+            <div className="section-content">
+              <div style={{
+                position: 'relative',
+                padding: '48px 56px',
+                maxWidth: 600,
+                background: 'rgba(28,24,20,0.12)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: 2,
+                animation: 'fadeInUp 1.5s ease forwards',
+              }}>
+                <h1 style={{
+                  fontFamily: `'${tweaks.fontHeading}', serif`,
+                  fontSize: 'clamp(32px, 5vw, 56px)',
+                  color: goldColor,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                  marginBottom: 16,
+                  textShadow: `0 2px 20px ${goldColor}44`,
+                }}>
+                  Codex Luminara
+                </h1>
+                <GoldDivider width={160} />
+                <p style={{
+                  fontFamily: `'${tweaks.fontBody}', serif`,
+                  fontSize: 'clamp(16px, 2vw, 20px)',
+                  color: CODEX.parchment + 'dd',
+                  marginTop: 20,
+                  lineHeight: 1.7,
+                  fontStyle: 'italic',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                }}>
+                  <DropCap letter="A" />rt Through the Ages — A Living Renaissance Manuscript.
+                  Journey through centuries of masterworks, from the divine
+                  brushstrokes of Leonardo to the luminous canvases of Vermeer.
+                </p>
+              </div>
+              {/* Scroll hint */}
+              <div style={{
+                position: 'absolute', bottom: 40,
+                animation: 'scrollHint 2s ease-in-out infinite',
+                opacity: 0.6,
+              }}>
+                <svg width="24" height="36" viewBox="0 0 24 36">
+                  <rect x="1" y="1" width="22" height="34" rx="11" stroke={goldColor} strokeWidth="1.5" fill="none" />
+                  <circle cx="12" cy="10" r="2" fill={goldColor}>
+                    <animate attributeName="cy" from="10" to="24" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="1" to="0.2" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Artwork Sections */}
+          {sections.slice(1).map((sec, i) => (
+            <ArtworkSection
+              key={sec.id}
+              section={sec}
+              index={i + 1}
+              active={activeSection === i + 1}
+              tweaks={tweaks}
+            />
+          ))}
+
+          {/* Gallery Section */}
+          <div className="section" id="gallery-section" style={{ scrollSnapAlign: 'start' }}>
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: `radial-gradient(ellipse at center, ${CODEX.ink} 0%, ${CODEX.dark} 100%)`,
+            }}></div>
+            <div className="section-content" style={{ justifyContent: 'center', gap: 32 }}>
+              <h2 style={{
+                fontFamily: `'${tweaks.fontHeading}', serif`,
+                fontSize: 'clamp(24px, 3.5vw, 42px)',
+                color: goldColor,
+                letterSpacing: '-0.02em',
+                textShadow: `0 2px 15px ${goldColor}44`,
+              }}>
+                Famous Renaissance Masterworks
+              </h2>
+              <GoldDivider width={240} />
+              <div className="gallery-track" style={{ marginTop: 16, paddingBottom: 16 }}>
+                {GALLERY_ARTWORKS.map((g, i) => (
+                  <GalleryCard key={i} {...g} />
+                ))}
+              </div>
+              <p style={{
+                fontFamily: `'${tweaks.fontBody}', serif`,
+                fontSize: 13, color: CODEX.parchment + '88',
+                fontStyle: 'italic', marginTop: 8,
+              }}>
+                ← Scroll to explore the collection →
+              </p>
+            </div>
+          </div>
+
+          {/* Tweaks Panel */}
+          <TweaksPanel>
+            <TweakSection title="Colors">
+              <TweakColor label="Gold Accent" value={tweaks.goldColor} onChange={v => setTweak('goldColor', v)} />
+              <TweakColor label="Background" value={tweaks.bgDark} onChange={v => setTweak('bgDark', v)} />
+            </TweakSection>
+            <TweakSection title="Typography">
+              <TweakSelect label="Heading Font" value={tweaks.fontHeading}
+                options={['Cinzel', 'Playfair Display']}
+                onChange={v => setTweak('fontHeading', v)} />
+              <TweakSelect label="Body Font" value={tweaks.fontBody}
+                options={['EB Garamond', 'Cormorant Garamond']}
+                onChange={v => setTweak('fontBody', v)} />
+            </TweakSection>
+            <TweakSection title="Animation">
+              <TweakSlider label="Ken Burns Duration" min={10} max={40} step={1}
+                value={tweaks.kenBurnsDuration} onChange={v => setTweak('kenBurnsDuration', v)} />
+              <TweakSlider label="Transition Speed" min={0.4} max={2.5} step={0.1}
+                value={tweaks.transitionSpeed} onChange={v => setTweak('transitionSpeed', v)} />
+            </TweakSection>
+            <TweakSection title="Effects">
+              <TweakSlider label="Overlay Opacity" min={0.2} max={0.9} step={0.05}
+                value={tweaks.overlayOpacity} onChange={v => setTweak('overlayOpacity', v)} />
+              <TweakSlider label="Bloom Intensity" min={0} max={1} step={0.05}
+                value={tweaks.bloomIntensity} onChange={v => setTweak('bloomIntensity', v)} />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      )}
+    </>
+  );
+}
+
+// ─── Individual Artwork Section ───
+function ArtworkSection({ section, index, active, tweaks }) {
+  const [inView, setInView] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      setInView(entry.isIntersecting);
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const isEven = index % 2 === 0;
+
+  return (
+    <div className="section" ref={ref} id={section.id}>
+      <KenBurnsBackground src={section.art} active={inView} index={index} />
+      {/* Golden bloom on transition */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: `radial-gradient(circle at center, ${tweaks.goldColor}${Math.round(tweaks.bloomIntensity * 20).toString(16).padStart(2,'0')} 0%, transparent 70%)`,
+        opacity: inView ? 0 : 0.8,
+        transition: `opacity ${tweaks.transitionSpeed}s ease`,
+        pointerEvents: 'none',
+      }}></div>
+      <div className="section-content" style={{
+        alignItems: isEven ? 'flex-start' : 'flex-end',
+        justifyContent: 'flex-end',
+        paddingBottom: '10vh',
+      }}>
+        <div style={{
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0)' : 'translateY(40px)',
+          transition: `all ${tweaks.transitionSpeed}s cubic-bezier(0.4,0,0.2,1)`,
+          transitionDelay: '0.3s',
+          maxWidth: 420,
+          textAlign: isEven ? 'left' : 'right',
+        }}>
+          <div style={{
+            padding: '28px 32px',
+            position: 'relative',
+            background: 'rgba(28,24,20,0.12)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 2,
+          }}>
+            <h2 style={{
+              fontFamily: `'${tweaks.fontHeading}', serif`,
+              fontSize: 'clamp(22px, 3vw, 36px)',
+              color: tweaks.goldColor,
+              letterSpacing: '-0.02em',
+              marginBottom: 8,
+              textShadow: `0 2px 10px ${CODEX.dark}`,
+            }}>{section.title}</h2>
+            <p style={{
+              fontFamily: `'${tweaks.fontBody}', serif`,
+              fontSize: 'clamp(14px, 1.8vw, 18px)',
+              color: CODEX.parchment + 'cc',
+              fontStyle: 'italic',
+              textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+            }}>{section.artist}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

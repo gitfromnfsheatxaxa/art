@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Codex Luminara – Artwork</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #1C1814; color: #F5E8C7; font-family: 'EB Garamond', serif; }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+  @keyframes kenBurnsIn { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeInRight { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+  a { color: #D4AF77; text-decoration: none; }
+  a:hover { color: #E8C77F; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="codex-components.jsx"></script>
+<script type="text/babel" src="timeline-components.jsx"></script>
+<script type="text/babel" src="artwork-data.jsx"></script>
+<script type="text/babel">
+
+function ArtworkDetailApp() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug') || 'mona-lisa';
+  const artwork = getArtworkBySlug(slug);
+  const [loaded, setLoaded] = React.useState(false);
+  const [panelVisible, setPanelVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!artwork) return;
+    const img = new Image();
+    img.onload = () => {
+      setLoaded(true);
+      setTimeout(() => setPanelVisible(true), 400);
+    };
+    img.onerror = () => { setLoaded(true); setTimeout(() => setPanelVisible(true), 400); };
+    img.src = artwork.img;
+  }, [slug]);
+
+  if (!artwork) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CODEX.dark }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 28, color: CODEX.gold, marginBottom: 16 }}>Artwork Not Found</div>
+          <a href="Gallery.html" style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: CODEX.gold }}>← Return to Gallery</a>
+        </div>
+      </div>
+    );
+  }
+
+  document.title = `${artwork.title} – Codex Luminara`;
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: CODEX.dark }}>
+      {/* Loading */}
+      {!loaded && <LoadingScreen progress={60} visible={true} />}
+
+      {/* Ken Burns Background */}
+      <div style={{ position: 'absolute', inset: 0, opacity: loaded ? 1 : 0, transition: 'opacity 1.2s ease' }}>
+        <img src={artwork.img} alt={artwork.title} style={{
+          position: 'absolute', inset: '-10%', width: '120%', height: '120%',
+          objectFit: 'cover',
+          animation: loaded ? 'kenBurnsIn 30s ease-in-out infinite alternate' : 'none',
+        }} />
+      </div>
+
+      {/* Vignette */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+        background: `linear-gradient(90deg, transparent 40%, ${CODEX.dark}dd 75%)`,
+      }}></div>
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+        background: `radial-gradient(ellipse at 30% 50%, transparent 30%, ${CODEX.dark}88 100%)`,
+      }}></div>
+
+      {/* Nav */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 40px',
+        background: `linear-gradient(180deg, ${CODEX.dark}cc, transparent)`,
+      }}>
+        <a href="Codex Luminara.html" style={{
+          fontFamily: "'Cinzel', serif", fontSize: 16, color: CODEX.gold,
+          letterSpacing: '0.15em',
+        }}>Codex Luminara</a>
+        <div style={{ display: 'flex', gap: 28 }}>
+          <a href="Gallery.html" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CODEX.parchment + 'aa' }}>Gallery</a>
+          <a href="Timeline.html" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CODEX.parchment + 'aa' }}>Timeline</a>
+        </div>
+      </div>
+
+      {/* Detail Panel */}
+      <div style={{
+        position: 'absolute', right: 0, top: 0, bottom: 0, zIndex: 10,
+        width: 'min(480px, 90vw)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '80px 48px 48px',
+        opacity: panelVisible ? 1 : 0,
+        transform: panelVisible ? 'translateX(0)' : 'translateX(50px)',
+        transition: 'all 1s cubic-bezier(0.4,0,0.2,1)',
+      }}>
+        <div style={{
+          background: 'rgba(28,24,20,0.55)',
+          backdropFilter: 'blur(20px)',
+          padding: '40px 36px',
+          borderLeft: `2px solid ${CODEX.gold}33`,
+          position: 'relative',
+        }}>
+          {/* Period badge */}
+          <div style={{
+            fontFamily: "'Cinzel', serif", fontSize: 11, color: CODEX.gold,
+            letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 16,
+          }}>{artwork.period} · {artwork.era}</div>
+
+          {/* Title */}
+          <h1 style={{
+            fontFamily: "'Cinzel', serif", fontSize: 'clamp(24px, 3vw, 36px)',
+            color: CODEX.parchment, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 8,
+            textShadow: `0 2px 10px ${CODEX.dark}`,
+          }}>{artwork.title}</h1>
+
+          {/* Artist + Year */}
+          <div style={{
+            fontFamily: "'EB Garamond', serif", fontSize: 18, color: CODEX.gold,
+            fontStyle: 'italic', marginBottom: 20,
+          }}>{artwork.artist}, {artwork.year}</div>
+
+          <GoldDivider width={120} />
+
+          {/* Description */}
+          {artwork.description && (
+            <p style={{
+              fontFamily: "'EB Garamond', serif", fontSize: 17, color: CODEX.parchment + 'dd',
+              lineHeight: 1.7, marginTop: 20, marginBottom: 20,
+              textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }}>{artwork.description}</p>
+          )}
+
+          {/* Metadata */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            {artwork.medium && <MetaRow label="Medium" value={artwork.medium} />}
+            {artwork.dimensions && <MetaRow label="Dimensions" value={artwork.dimensions} />}
+            {artwork.location && <MetaRow label="Location" value={artwork.location} />}
+          </div>
+
+          <GoldDivider width={100} />
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: 16, marginTop: 24, flexWrap: 'wrap' }}>
+            <GoldButton href="Timeline.html" label="View in Timeline" />
+            <GoldButton href="Gallery.html" label="Back to Gallery" secondary />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+      <span style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: CODEX.gold + 'aa', letterSpacing: '0.1em', textTransform: 'uppercase', minWidth: 90 }}>{label}</span>
+      <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, color: CODEX.parchment + 'cc' }}>{value}</span>
+    </div>
+  );
+}
+
+function GoldButton({ href, label, secondary }) {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <a href={href}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase',
+        padding: '10px 22px',
+        background: secondary ? 'transparent' : (hover ? CODEX.glowGold : CODEX.gold),
+        color: secondary ? CODEX.gold : CODEX.dark,
+        border: secondary ? `1px solid ${CODEX.gold}66` : 'none',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        transform: hover ? 'scale(1.04)' : 'scale(1)',
+        textDecoration: 'none',
+        display: 'inline-block',
+      }}>{label}</a>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ArtworkDetailApp />);
+</script>
+</body>
+</html>

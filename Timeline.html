@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Codex Luminara – Timeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #1C1814; color: #F5E8C7; font-family: 'EB Garamond', serif; }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+  @keyframes kenBurnsIn { 0% { transform: scale(1); } 100% { transform: scale(1.12); } }
+  @keyframes kenBurnsOut { 0% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes pulseGlow { 0%,100% { opacity:0.8; text-shadow:0 0 40px #E8C77F66; } 50% { opacity:1; text-shadow:0 0 60px #E8C77Faa; } }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="codex-components.jsx"></script>
+<script type="text/babel" src="timeline-components.jsx"></script>
+<script type="text/babel" src="artwork-data.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "goldColor": "#D4AF77",
+  "transitionSpeed": 1.0,
+  "kenBurnsDuration": 25,
+  "overlayOpacity": 0.12
+}/*EDITMODE-END*/;
+
+function TimelineApp() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [loading, setLoading] = React.useState(true);
+  const [progress, setProgress] = React.useState(0);
+  const [activeEra, setActiveEra] = React.useState(0);
+  const [hoveredBg, setHoveredBg] = React.useState(null);
+  const [transitioning, setTransitioning] = React.useState(false);
+  const wheelLock = React.useRef(false);
+  const touchStart = React.useRef(0);
+
+  const era = TIMELINE_ERAS[activeEra];
+  const currentBg = hoveredBg || era.defaultBg;
+
+  // Preload all images
+  React.useEffect(() => {
+    const allSrcs = [];
+    TIMELINE_ERAS.forEach(e => {
+      allSrcs.push(e.defaultBg);
+      e.entries.forEach(en => allSrcs.push(en.img));
+    });
+    const unique = [...new Set(allSrcs)];
+    let loaded = 0;
+    unique.forEach(src => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        setProgress(Math.round((loaded / unique.length) * 100));
+        if (loaded >= unique.length) setTimeout(() => setLoading(false), 600);
+      };
+      img.src = src;
+    });
+  }, []);
+
+  const navigate = React.useCallback((dir) => {
+    if (transitioning) return;
+    const next = activeEra + dir;
+    if (next < 0 || next >= TIMELINE_ERAS.length) return;
+    setTransitioning(true);
+    setHoveredBg(null);
+    setActiveEra(next);
+    setTimeout(() => setTransitioning(false), 800);
+  }, [activeEra, transitioning]);
+
+  // Keyboard
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigate(1); }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
+  // Mouse wheel
+  React.useEffect(() => {
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (wheelLock.current) return;
+      wheelLock.current = true;
+      if (e.deltaY > 20) navigate(1);
+      else if (e.deltaY < -20) navigate(-1);
+      setTimeout(() => { wheelLock.current = false; }, 800);
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [navigate]);
+
+  // Touch swipe
+  React.useEffect(() => {
+    const onStart = (e) => { touchStart.current = e.touches[0].clientY; };
+    const onEnd = (e) => {
+      const diff = touchStart.current - e.changedTouches[0].clientY;
+      if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+    };
+    window.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchend', onEnd, { passive: true });
+    return () => { window.removeEventListener('touchstart', onStart); window.removeEventListener('touchend', onEnd); };
+  }, [navigate]);
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: CODEX.dark }}>
+      <LoadingScreen progress={progress} visible={loading} />
+
+      {!loading && (
+        <>
+          {/* Background layers — crossfade */}
+          {TIMELINE_ERAS.map((e, i) => {
+            const isThisEra = i === activeEra;
+            const showDefault = isThisEra && !hoveredBg;
+            const showHovered = isThisEra && hoveredBg;
+            return (
+              <React.Fragment key={e.id}>
+                {/* Default bg */}
+                <div style={{
+                  position: 'absolute', inset: 0, zIndex: 0,
+                  opacity: showDefault ? 1 : 0,
+                  transition: `opacity ${tweaks.transitionSpeed}s cubic-bezier(0.4,0,0.2,1)`,
+                }}>
+                  <img src={e.defaultBg} alt="" style={{
+                    width: '120%', height: '120%', position: 'absolute', inset: '-10%',
+                    objectFit: 'cover',
+                    animation: showDefault ? `kenBurnsIn ${tweaks.kenBurnsDuration}s ease-in-out infinite alternate` : 'none',
+                  }} />
+                </div>
+              </React.Fragment>
+            );
+          })}
+          {/* Hovered artwork overlay */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 1,
+            opacity: hoveredBg ? 1 : 0,
+            transition: `opacity ${tweaks.transitionSpeed * 0.6}s ease`,
+          }}>
+            {hoveredBg && (
+              <img src={hoveredBg} alt="" style={{
+                width: '120%', height: '120%', position: 'absolute', inset: '-10%',
+                objectFit: 'cover',
+                animation: `kenBurnsOut ${tweaks.kenBurnsDuration}s ease-in-out infinite alternate`,
+              }} />
+            )}
+          </div>
+
+          {/* Vignette + radial dark */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+            background: `radial-gradient(ellipse at center, transparent 20%, ${CODEX.dark}bb 100%)`,
+          }}></div>
+
+          {/* Golden bloom on transition */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+            background: `radial-gradient(circle at center, ${CODEX.glowGold}15 0%, transparent 60%)`,
+            opacity: transitioning ? 1 : 0,
+            transition: 'opacity 0.6s ease',
+          }}></div>
+
+          {/* Nav bar */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '20px 40px',
+            background: `linear-gradient(180deg, ${CODEX.dark}cc, transparent)`,
+          }}>
+            <a href="Codex Luminara.html" style={{
+              fontFamily: "'Cinzel', serif", fontSize: 16, color: CODEX.gold,
+              letterSpacing: '0.15em', textDecoration: 'none',
+            }}>Codex Luminara</a>
+            <div style={{ display: 'flex', gap: 28 }}>
+              <a href="Gallery.html" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CODEX.parchment + 'aa' }}>Gallery</a>
+              <div style={{
+              fontFamily: "'Cinzel', serif", fontSize: 12, color: CODEX.parchment + 'aa',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>Timeline</div>
+            </div>
+          </div>
+
+          {/* SVG Timeline */}
+          <TimelineSVG activeEra={activeEra} totalEras={TIMELINE_ERAS.length} />
+
+          {/* Era content */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {/* Left side: era info */}
+            <div style={{
+              position: 'absolute', left: '5%', top: '50%', transform: 'translateY(-50%)',
+              width: 'calc(45% - 40px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+              gap: 16,
+            }}>
+              {/* Era header */}
+              <div style={{
+                textAlign: 'right', marginBottom: 12,
+                opacity: !transitioning ? 1 : 0,
+                transform: !transitioning ? 'translateX(0)' : 'translateX(-30px)',
+                transition: 'all 0.8s cubic-bezier(0.4,0,0.2,1)',
+              }}>
+                <div style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: 'clamp(12px, 1.4vw, 14px)',
+                  color: CODEX.gold,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                }}>{era.period}</div>
+                <div style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: 'clamp(20px, 2.8vw, 36px)',
+                  color: CODEX.parchment,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                  textShadow: `0 2px 15px ${CODEX.dark}`,
+                }}>{era.label}</div>
+                <div style={{ marginTop: 12 }}><GoldDivider width={140} /></div>
+              </div>
+              {/* Entries on left (odd indices) */}
+              {era.entries.filter((_, i) => i % 2 === 0).map((entry, i) => (
+                <TimelineEntry key={entry.title} entry={entry} index={i} side="left"
+                  onHover={setHoveredBg} isActive={!transitioning} />
+              ))}
+            </div>
+
+            {/* Right side: entries */}
+            <div style={{
+              position: 'absolute', right: '5%', top: '50%', transform: 'translateY(-50%)',
+              width: 'calc(45% - 40px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+              gap: 16, paddingTop: 60,
+            }}>
+              {era.entries.filter((_, i) => i % 2 === 1).map((entry, i) => (
+                <TimelineEntry key={entry.title} entry={entry} index={i + 1} side="right"
+                  onHover={setHoveredBg} isActive={!transitioning} />
+              ))}
+            </div>
+          </div>
+
+          {/* Era indicator */}
+          <div style={{
+            position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 20, textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: "'Cinzel', serif", fontSize: 11, color: CODEX.gold + '88',
+              letterSpacing: '0.2em', textTransform: 'uppercase',
+            }}>{activeEra + 1} / {TIMELINE_ERAS.length}</div>
+          </div>
+
+          {/* Tweaks */}
+          <TweaksPanel>
+            <TweakSection title="Animation">
+              <TweakSlider label="Transition Speed" min={0.3} max={2} step={0.1}
+                value={tweaks.transitionSpeed} onChange={v => setTweak('transitionSpeed', v)} />
+              <TweakSlider label="Ken Burns Duration" min={10} max={40} step={1}
+                value={tweaks.kenBurnsDuration} onChange={v => setTweak('kenBurnsDuration', v)} />
+            </TweakSection>
+            <TweakSection title="Style">
+              <TweakColor label="Gold Accent" value={tweaks.goldColor} onChange={v => setTweak('goldColor', v)} />
+              <TweakSlider label="Overlay Opacity" min={0.05} max={0.4} step={0.01}
+                value={tweaks.overlayOpacity} onChange={v => setTweak('overlayOpacity', v)} />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<TimelineApp />);
+</script>
+</body>
+</html>

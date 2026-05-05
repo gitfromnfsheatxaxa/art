@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(head *)",
+      "Bash(npm run *)",
+      "Bash(node -e *)"
+    ]
+  }
+}
