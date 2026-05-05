@@ -1,8 +1,7 @@
 "use client";
 
+import { memo, useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -18,7 +17,7 @@ type KenBurnsBackgroundProps = {
   onPortraitDetected?: (isPortrait: boolean) => void;
 };
 
-export function KenBurnsBackground({
+export const KenBurnsBackground = memo(function KenBurnsBackground({
   src,
   alt = "",
   active = true,
@@ -39,25 +38,29 @@ export function KenBurnsBackground({
   };
 
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", className)}>
-      <motion.div
-        className="absolute inset-[-10%]"
-        initial={{ scale: direction === "in" ? 1 : 1.12 }}
-        animate={{ scale: active ? (direction === "in" ? 1.12 : 1) : 1.03 }}
-        transition={{ duration: 18, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+    <div className={cn("absolute inset-0 overflow-hidden", isPortrait && "bg-codex-dark", className)}>
+      <div
+        className={cn(
+          "absolute inset-[-10%]",
+          active
+            ? direction === "in"
+              ? "animate-ken-burns-in"
+              : "animate-ken-burns-out"
+            : undefined,
+        )}
       >
         <Image
           src={src}
           alt={alt}
           fill
           priority={priority}
-          className="object-cover"
+          className={isPortrait ? "object-contain" : "object-cover"}
           style={{ objectPosition }}
           sizes="100vw"
           onLoad={handleImageLoad}
         />
-      </motion.div>
+      </div>
       {!isPortrait && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}
     </div>
   );
-}
+});

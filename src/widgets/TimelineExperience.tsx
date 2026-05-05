@@ -25,7 +25,6 @@ export function TimelineExperience() {
   const dragStart = useRef<number | null>(null);
 
   const currentEra = TIMELINE_ERAS[activeEra];
-  const currentBg = hoveredBg ?? currentEra.defaultBg;
 
   const navigate = useCallback((direction: number) => {
     if (transitioning) {
@@ -106,25 +105,21 @@ export function TimelineExperience() {
     };
   }, [navigate]);
 
+  // Only preload era background images — entry artwork images load on-demand
   const imageSources = useMemo(
-    () =>
-      TIMELINE_ERAS.flatMap((era) => [
-        era.defaultBg,
-        ...era.entries.map((entry) => entry.img),
-      ]),
+    () => TIMELINE_ERAS.map((era) => era.defaultBg),
     [],
   );
 
-  const audioSources = useMemo(() => TIMELINE_ERAS.map((era) => era.music), []);
-
   return (
     <>
-      <Preloader imageSources={imageSources} audioSources={audioSources} onReady={() => setPreloaded(true)} />
+      <Preloader imageSources={imageSources} onReady={() => setPreloaded(true)} />
       <FloatingNav items={[{ href: "/", label: "Home" }, { href: "/gallery", label: "Gallery" }]} />
       <main className="relative z-10 h-screen overflow-hidden">
+        {/* Layer 1: era background — stable, only remounts on era navigation */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentBg}
+            key={currentEra.id}
             className="absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -132,12 +127,30 @@ export function TimelineExperience() {
             transition={{ duration: 0.65 }}
           >
             <KenBurnsBackground
-              src={currentBg}
+              src={currentEra.defaultBg}
               priority
-              objectPosition={hoveredBg ? "50% 50%" : currentEra.defaultBgPosition}
+              active={!transitioning}
+              objectPosition={currentEra.defaultBgPosition}
             />
           </motion.div>
         </AnimatePresence>
+
+        {/* Layer 2: artwork hover/touch preview — cross-dissolves independently over Layer 1 */}
+        <AnimatePresence>
+          {hoveredBg && (
+            <motion.div
+              key={hoveredBg}
+              className="absolute inset-0 z-[1]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45 }}
+            >
+              <KenBurnsBackground src={hoveredBg} active objectPosition="50% 50%" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.div
           className="absolute inset-0 z-[2] bg-[radial-gradient(circle,rgba(232,199,127,0.15),transparent_58%)]"
           animate={{ opacity: transitioning ? 1 : hoveredBg ? 0.8 : 0.35 }}
@@ -189,8 +202,9 @@ export function TimelineExperience() {
               ))}
           </div>
 
+          {/* Mobile layout — reduced opacity so background shows through */}
           <div className="relative w-full max-w-md md:hidden">
-            <div className="border border-codex-gold/20 bg-codex-dark/42 p-6 backdrop-blur-xl">
+            <div className="border border-codex-gold/20 bg-codex-dark/15 p-6 backdrop-blur-md">
               <div className="font-heading text-xs uppercase tracking-[0.18em] text-codex-gold">{currentEra.period}</div>
               <h1 className="mt-3 font-heading text-3xl text-codex-parchment">{currentEra.label}</h1>
               <GoldDivider width={140} className="mt-4" />
@@ -203,6 +217,7 @@ export function TimelineExperience() {
                     index={index}
                     active={!transitioning}
                     onHover={setHoveredBg}
+                    onTouchPreview={setHoveredBg}
                   />
                 ))}
               </div>

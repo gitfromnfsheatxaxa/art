@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -12,14 +13,16 @@ type TimelineEntryCardProps = {
   index: number;
   active: boolean;
   onHover: (img: string | null) => void;
+  onTouchPreview?: (img: string | null) => void;
 };
 
-export function TimelineEntryCard({
+export const TimelineEntryCard = memo(function TimelineEntryCard({
   entry,
   side,
   index,
   active,
   onHover,
+  onTouchPreview,
 }: TimelineEntryCardProps) {
   const href = `/artwork/${slugify(entry.title)}`;
 
@@ -38,6 +41,8 @@ export function TimelineEntryCard({
         onMouseLeave={() => onHover(null)}
         onFocus={() => onHover(entry.img)}
         onBlur={() => onHover(null)}
+        onTouchStart={() => onTouchPreview?.(entry.img)}
+        onTouchEnd={() => onTouchPreview?.(null)}
         className={`group flex ${side === "left" ? "justify-end text-right" : "justify-start text-left"}`}
       >
         <div className="max-w-[290px] border border-transparent bg-codex-dark/18 px-5 py-3 backdrop-blur-xl transition-all duration-300 group-hover:scale-[1.03] group-hover:border-codex-gold/40 group-hover:bg-codex-dark/35">
@@ -48,4 +53,4 @@ export function TimelineEntryCard({
       </Link>
     </motion.div>
   );
-}
+});

@@ -12,8 +12,6 @@ const nextConfig: NextConfig = {
         hostname: "images.metmuseum.org",
       },
     ],
-    // Temporary but very effective fix for development
-    unoptimized: true,
   },
 };
 
