@@ -10,6 +10,7 @@ import { TIMELINE_ERAS } from "@/shared/constants/timeline";
 import { FloatingNav } from "@/shared/ui/FloatingNav";
 import { GoldDivider } from "@/shared/ui/GoldDivider";
 import { KenBurnsBackground } from "@/shared/ui/KenBurnsBackground";
+import { TimelineNavigationHints } from "@/shared/ui/TimelineNavigationHints";
 import { Preloader } from "@/processes/Preloader";
 import { TimelineEntryCard } from "@/shared/ui/TimelineEntryCard";
 import { TimelineSVG } from "@/shared/ui/TimelineSVG";
@@ -125,6 +126,7 @@ export function TimelineExperience() {
         onReady={() => setPreloaded(true)}
       />
       <FloatingNav items={[{ href: "/", label: "Home" }, { href: "/gallery", label: "Gallery" }]} />
+      <TimelineNavigationHints />
       <main className="relative z-10 h-screen overflow-hidden">
         {/* Layer 1: era background — stable, only remounts on era navigation */}
         <AnimatePresence mode="wait">
@@ -236,9 +238,59 @@ export function TimelineExperience() {
         </div>
 
         <div className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2 text-center">
-          <div className="font-heading text-[11px] uppercase tracking-[0.22em] text-codex-gold/85">
-            {activeEra + 1} / {TIMELINE_ERAS.length}
-          </div>
+          <motion.div
+            key={activeEra}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center gap-3"
+          >
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate(-1)}
+                disabled={activeEra === 0}
+                className="rounded-full border border-codex-gold/30 p-2 transition-all hover:border-codex-gold/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Previous era"
+                title="Previous era"
+              >
+                <svg className="h-4 w-4 text-codex-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div className="font-heading text-xs uppercase tracking-[0.22em] text-codex-gold/85">
+                <span className="text-base font-bold">{activeEra + 1}</span>
+                <span className="text-codex-gold/60"> / {TIMELINE_ERAS.length}</span>
+              </div>
+
+              <button
+                onClick={() => navigate(1)}
+                disabled={activeEra === TIMELINE_ERAS.length - 1}
+                className="rounded-full border border-codex-gold/30 p-2 transition-all hover:border-codex-gold/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Next era"
+                title="Next era"
+              >
+                <svg className="h-4 w-4 text-codex-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="flex items-center gap-1.5">
+              {TIMELINE_ERAS.map((_, index) => (
+                <motion.div
+                  key={index}
+                  className="h-1 rounded-full transition-all"
+                  animate={{
+                    width: index === activeEra ? 24 : 8,
+                    backgroundColor: index <= activeEra ? "rgb(232, 199, 127)" : "rgba(232, 199, 127, 0.25)",
+                  }}
+                  transition={{ duration: 0.3 }}
+                />
+              ))}
+            </div>
+          </motion.div>
         </div>
       </main>
     </>
