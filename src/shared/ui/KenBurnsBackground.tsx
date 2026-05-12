@@ -10,8 +10,8 @@ type KenBurnsBackgroundProps = {
   alt?: string;
   active?: boolean;
   direction?: "in" | "out";
-  /** When true, portrait images use object-contain so the full artwork is visible.
-   *  Leave false (default) for full-bleed backgrounds that should always fill the screen. */
+  /** When true, all images use object-contain so the full artwork is visible without distortion.
+   *  When false (default) for full-bleed backgrounds that should always fill the screen. */
   portraitContain?: boolean;
   priority?: boolean;
   objectPosition?: string;
@@ -44,10 +44,8 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
     onPortraitDetected?.(portrait);
   };
 
-  const effectivePortrait = portraitContain && isPortrait;
-
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", effectivePortrait && "bg-codex-dark", className)}>
+    <div className={cn("absolute inset-0 overflow-hidden", portraitContain && "bg-codex-dark", className)}>
       <div
         className={cn(
           "absolute inset-[-10%]",
@@ -63,7 +61,7 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
           alt={alt}
           fill
           priority={priority}
-          className={effectivePortrait ? "object-contain" : "object-cover"}
+          className={portraitContain ? "object-contain" : "object-cover"}
           style={{ objectPosition }}
           sizes="100vw"
           onLoad={handleImageLoad}
@@ -71,7 +69,7 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
           blurDataURL={placeholder}
         />
       </div>
-      {!effectivePortrait && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}
+      {!portraitContain && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}
     </div>
   );
 });

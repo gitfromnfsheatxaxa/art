@@ -61,6 +61,7 @@ export function GalleryExperience({ items }: GalleryExperienceProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [preloaded, setPreloaded] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
 
   const isTransitioning = useRef(false);
   const wheelAcc = useRef(0);
@@ -177,6 +178,8 @@ export function GalleryExperience({ items }: GalleryExperienceProps) {
               src={current.img}
               direction={even ? "in" : "out"}
               priority={activeIndex < 2}
+              portraitContain
+              onPortraitDetected={setIsPortrait}
             />
           </motion.div>
         </AnimatePresence>
@@ -190,9 +193,8 @@ export function GalleryExperience({ items }: GalleryExperienceProps) {
             initial="initial"
             animate="animate"
             exit="exit"
-            className={`absolute inset-0 z-10 flex items-center px-6 md:px-16 ${
-              even ? "justify-start" : "justify-end"
-            }`}
+            className={`absolute inset-0 z-10 flex items-center px-6 md:px-16 ${even ? "justify-start" : "justify-end"
+              }`}
           >
             <div className="max-w-[520px]">
               <div
