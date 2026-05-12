@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import type { GalleryItem } from "@/features/api/types";
 import { FEATURED_MET_IDS, fetchMetGalleryItems } from "@/features/api/met-museum";
 import { FEATURED_RIJKSMUSEUM_IDS, fetchRijksmuseumGalleryItems } from "@/features/api/rijksmuseum";
 import { GALLERY_ARTWORKS } from "@/shared/constants/artworks";
 import { GalleryExperience } from "@/widgets/GalleryExperience";
+import { PageLoadingSkeleton } from "@/shared/ui/PageLoadingSkeleton";
 
 export const metadata: Metadata = {
   title: "Gallery — Codex Luminara",
@@ -54,5 +56,9 @@ export default async function GalleryPage() {
   // Combine all sources: Rijksmuseum first, then Met Museum, then static
   const allItems: GalleryItem[] = [...rijksmuseumItems, ...metItems, ...staticItems];
 
-  return <GalleryExperience items={staticItems} />;
+  return (
+    <Suspense fallback={<PageLoadingSkeleton />}>
+      <GalleryExperience items={staticItems} />
+    </Suspense>
+  );
 }

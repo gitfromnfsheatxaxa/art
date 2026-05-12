@@ -5,20 +5,30 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingScreen } from "@/shared/ui/LoadingScreen";
 
 type PreloaderProps = {
+  /** Hero/critical images that should preload before showing content */
   imageSources: string[];
+  /** Additional images to preload asynchronously in background (don't block FCP) */
+  backgroundImages?: string[];
   audioSources?: string[];
   onReady?: () => void;
 };
 
-export function Preloader({ imageSources, onReady }: PreloaderProps) {
+export function Preloader({ imageSources, backgroundImages, onReady }: PreloaderProps) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
+  // Critical images that must load before hiding preloader
   const assets = useMemo(
     () => [...new Set(imageSources)],
     [imageSources],
+  );
+
+  // Background images that load async (don't block FCP)
+  const backgroundAssets = useMemo(
+    () => [...new Set(backgroundImages ?? [])],
+    [backgroundImages],
   );
 
   useEffect(() => {
@@ -58,6 +68,14 @@ export function Preloader({ imageSources, onReady }: PreloaderProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets]);
+
+  // Preload background images without blocking
+  useEffect(() => {
+    backgroundAssets.forEach((src) => {
+      const img = new window.Image();
+      img.src = src;
+    });
+  }, [backgroundAssets]);
 
   return <LoadingScreen progress={progress} visible={visible} />;
 }

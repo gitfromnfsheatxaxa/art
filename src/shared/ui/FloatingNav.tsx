@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -14,7 +15,11 @@ type FloatingNavProps = {
   className?: string;
 };
 
-export function FloatingNav({ items, brandHref = "/", className }: FloatingNavProps) {
+export const FloatingNav = memo(function FloatingNav({
+  items,
+  brandHref = "/",
+  className,
+}: FloatingNavProps) {
   const pathname = usePathname();
   const musicEnabled = useMusicStore((state) => state.musicEnabled);
   const toggleMusicEnabled = useMusicStore((state) => state.toggleMusicEnabled);
@@ -62,7 +67,7 @@ export function FloatingNav({ items, brandHref = "/", className }: FloatingNavPr
               </Link>
             );
           })}
-          
+
           {/* Music toggle button */}
           <button
             onClick={toggleMusicEnabled}
@@ -81,4 +86,4 @@ export function FloatingNav({ items, brandHref = "/", className }: FloatingNavPr
       </div>
     </motion.header>
   );
-}
+});

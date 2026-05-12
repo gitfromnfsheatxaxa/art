@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -11,6 +10,7 @@ import { GALLERY_ARTWORKS } from "@/shared/constants/artworks";
 import { DropCap } from "@/shared/ui/DropCap";
 import { FloatingNav } from "@/shared/ui/FloatingNav";
 import { GalleryCard } from "@/shared/ui/GalleryCard";
+import { LazyGalleryCard } from "@/shared/ui/LazyGalleryCard";
 import { GoldButton } from "@/shared/ui/GoldButton";
 import { GoldDivider } from "@/shared/ui/GoldDivider";
 import { KenBurnsBackground } from "@/shared/ui/KenBurnsBackground";
@@ -108,11 +108,17 @@ export function HomeExperience() {
     setCurrentTrack(homeSectionMusic[activeSection % homeSectionMusic.length] ?? null);
   }, [activeSection, preloaded, setCurrentTrack]);
 
-  // Preload the first 6 background images for better performance
-  const imageSources = useMemo(
+  // OPTIMIZATION: Only preload first hero image to reduce FCP
+  // Background images load asynchronously in background
+  const heroImageSource = useMemo(
+    () => DESKTOP_SECTIONS[0]?.art || MOBILE_SECTIONS[0]?.art || "",
+    [],
+  );
+
+  const backgroundImageSources = useMemo(
     () => [
-      ...DESKTOP_SECTIONS.slice(0, HOME_SECTION_LIMIT).map(s => s.art),
-      ...MOBILE_SECTIONS.slice(0, HOME_SECTION_LIMIT).map(s => s.art),
+      ...DESKTOP_SECTIONS.slice(1, HOME_SECTION_LIMIT).map(s => s.art),
+      ...MOBILE_SECTIONS.slice(1, HOME_SECTION_LIMIT).map(s => s.art),
     ],
     [],
   );
@@ -132,8 +138,8 @@ export function HomeExperience() {
   return (
     <>
       <Preloader
-        imageSources={imageSources}
-        audioSources={audioSources}
+        imageSources={heroImageSource ? [heroImageSource] : []}
+        backgroundImages={backgroundImageSources}
         onReady={() => setPreloaded(true)}
       />
       <PageProgress progress={progress} />
@@ -173,6 +179,7 @@ export function HomeExperience() {
                 src={currentSection.art}
                 direction={activeSection % 2 === 0 ? "in" : "out"}
                 objectPosition={currentSection.bgPosition}
+                priority={activeSection === 0}
               />
             </motion.div>
           ) : (
@@ -234,13 +241,7 @@ export function HomeExperience() {
                 <GoldDivider width={240} />
                 <div className="hide-scrollbar flex w-full gap-6 overflow-x-auto px-2 pb-4 pt-2 md:px-8">
                   {GALLERY_ARTWORKS.map((artwork, i) => (
-                    <motion.div
-                      key={artwork.slug}
-                      initial={{ opacity: 0, y: 24 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.55, delay: i * 0.08 + 0.2 }}
-                      className="shrink-0"
-                    >
+                    <LazyGalleryCard key={artwork.slug} index={i} isActive={isGallerySection}>
                       <Link href={`/artwork/${artwork.slug}`}>
                         <GalleryCard
                           art={artwork.img}
@@ -249,7 +250,7 @@ export function HomeExperience() {
                           year={artwork.year}
                         />
                       </Link>
-                    </motion.div>
+                    </LazyGalleryCard>
                   ))}
                 </div>
                 <p className="text-sm italic text-codex-parchment/70">
@@ -266,9 +267,8 @@ export function HomeExperience() {
               initial="initial"
               animate="animate"
               exit="exit"
-              className={`absolute inset-0 z-10 flex items-end px-8 pb-[14vh] md:px-16 ${
-                activeSection % 2 === 0 ? "justify-start" : "justify-end"
-              }`}
+              className={`absolute inset-0 z-10 flex items-end px-8 pb-[14vh] md:px-16 ${activeSection % 2 === 0 ? "justify-start" : "justify-end"
+                }`}
             >
               <div className={`max-w-[480px] ${activeSection % 2 === 0 ? "text-left" : "text-right"}`}>
                 <p className="mb-3 font-heading text-[10px] uppercase tracking-[0.3em] text-codex-gold/70 [text-shadow:0_1px_12px_rgba(0,0,0,0.95)]">
@@ -342,3 +342,4 @@ export function HomeExperience() {
     </>
   );
 }
+

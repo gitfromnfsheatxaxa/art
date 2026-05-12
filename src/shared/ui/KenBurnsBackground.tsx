@@ -18,6 +18,8 @@ type KenBurnsBackgroundProps = {
   overlayClassName?: string;
   className?: string;
   onPortraitDetected?: (isPortrait: boolean) => void;
+  /** Data URI for blur placeholder (10px), enables blur-up effect */
+  placeholder?: string;
 };
 
 export const KenBurnsBackground = memo(function KenBurnsBackground({
@@ -31,6 +33,7 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
   overlayClassName,
   className,
   onPortraitDetected,
+  placeholder,
 }: KenBurnsBackgroundProps) {
   const [isPortrait, setIsPortrait] = useState(false);
 
@@ -64,6 +67,8 @@ export const KenBurnsBackground = memo(function KenBurnsBackground({
           style={{ objectPosition }}
           sizes="100vw"
           onLoad={handleImageLoad}
+          placeholder={placeholder ? "blur" : undefined}
+          blurDataURL={placeholder}
         />
       </div>
       {!effectivePortrait && <div className={cn("absolute inset-0 codex-vignette", overlayClassName)} />}

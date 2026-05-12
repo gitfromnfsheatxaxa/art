@@ -105,15 +105,25 @@ export function TimelineExperience() {
     };
   }, [navigate]);
 
-  // Only preload era background images — entry artwork images load on-demand
-  const imageSources = useMemo(
-    () => TIMELINE_ERAS.map((era) => era.defaultBg),
+  // OPTIMIZATION: Only preload first era background immediately
+  // Other eras preload in background without blocking FCP
+  const heroImageSource = useMemo(
+    () => [TIMELINE_ERAS[0]?.defaultBg || ""],
+    [],
+  );
+
+  const backgroundImageSources = useMemo(
+    () => TIMELINE_ERAS.slice(1).map((era) => era.defaultBg),
     [],
   );
 
   return (
     <>
-      <Preloader imageSources={imageSources} onReady={() => setPreloaded(true)} />
+      <Preloader
+        imageSources={heroImageSource}
+        backgroundImages={backgroundImageSources}
+        onReady={() => setPreloaded(true)}
+      />
       <FloatingNav items={[{ href: "/", label: "Home" }, { href: "/gallery", label: "Gallery" }]} />
       <main className="relative z-10 h-screen overflow-hidden">
         {/* Layer 1: era background — stable, only remounts on era navigation */}
